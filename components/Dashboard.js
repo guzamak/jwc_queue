@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [text, setText] = useState(""); // แสดงข้อมูลในรูปแบบ JSON
   const [password, setPassword] = useState("");
+  const [error,setError] = useState();
 
 
   useEffect(() => {
@@ -70,15 +71,18 @@ export default function Dashboard() {
       setConsultIndex(index);
     }
 
+    if (role == "Admin") {
+      setIsAdmin(true)
+    }
+
     socket.emit("getData", { id });
 
     const handleData = (d) => {
       setData(d);
-      setText(JSON.stringify(d, null, 2))
     };
 
     const handleError = (text) => {
-      const id = toast.error(text);
+      const toastId = toast.error(text);
     };
 
     socket.on("dataResponse", handleData);
@@ -89,6 +93,11 @@ export default function Dashboard() {
       socket.off("error", handleError);
     };
   }, [isConnected, session, status]);
+
+  useEffect(() => {
+    const toastId = toast.error(error);
+  },
+  [error])
 
   const addQueue = (index) => {
     if (status != "authenticated") return;
@@ -111,48 +120,38 @@ export default function Dashboard() {
     if (id) {
       socket.emit("InRoomQueue", { id });
     }
-  };
-  const handleChange = () => {
-    let newData;
-    try {
-      newData = JSON.parse(text);
-      AdminControl(newData, password);
-    } catch (e) {
-      const id = toast.error("Invalid JSON format");
-    }
-  };
-
-const isValidStructure = (data) => {
-  if (!Array.isArray(data)) return false;
-  return data.every(inner =>
-    Array.isArray(inner) &&
-    inner.every(obj =>
-      typeof obj === "object" &&
-      typeof obj.name === "string" &&
-      typeof obj.inroom === "boolean"
-    )
-  );
-};
-
-
-const AdminControl = (newData, password) => {
-  if (status !== "authenticated") return;
-  if (!isAdmin) return;
-
-  if (!isValidStructure(newData)) {
-    const id = toast.error("Invalid data structure. It must be [[{ name: string, inroom: boolean }]].");
-    return;
   }
 
+
+const AdminControl = () => {
+  if (status != "authenticated") return;
+  if (!isAdmin) return;
   const id = session?.user?.id;
   if (id) {
-    socket.emit("admin", { id, newData, password });
+    socket.emit("admin", { id, text, password });
   }
 };
+const Refresh = ()=>{
+  setText(JSON.stringify(data, null, 2))
+}
 
+console.log(data)
 
   return (
     <>
+    <ToastContainer
+      position="top-center"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="light"
+      transition={Slide}
+    />
       <div
         id="main"
         className={`${
@@ -161,19 +160,6 @@ const AdminControl = (newData, password) => {
             : "opacity-0 pointer-events-none"
         } duration-500  min-h-screen bg-neutral-50 flex flex-col items-center font-IBM-Plex text-gray-500`}
       >
-        <ToastContainer
-          position="top-center"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-          transition={Slide}
-        />
         <header id="header" className="bg-white border-b border-gray-200 p-4">
           <div className="container mx-auto flex justify-between items-center">
             {/* <h1 className="text-xl">Queue Management</h1>
@@ -356,24 +342,29 @@ const AdminControl = (newData, password) => {
             );
           })}
         </div>
-      </div>
-      {isAdmin && (
-        <div>
+            {isAdmin && (
+        <div className="container p-4 space-y-2">
         <textarea
           rows={10}
           cols={50}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          className="h-48 w-full focus-visible:ring-0 focus-visible:outline-0 border-[1px] p-4 rounded-sm no-scrollbar"
         />
+        <div className="flex gap-4">
         <input
           type="password"
           placeholder="Enter password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="w-full  py-2 px-4 border-[0.5px]  border-gray-300 text-gray-500  rounded-lg duration-200 focus-visible:ring-0 focus-visible:outline-0 "
         />
-        <button onClick={handleChange}>Change</button>
+        <button onClick={Refresh} className="w-full  py-2 border-[0.5px] hover:bg-gray-100 border-gray-300 text-gray-500  rounded-lg cursor-pointer duration-200">Refresh</button>
+        <button onClick={AdminControl} className="w-full  py-2 border-[0.5px] hover:bg-gray-100 border-gray-300 text-gray-500  rounded-lg cursor-pointer duration-200">Change</button>
+        </div>
       </div>
       )}
+      </div>
       <div
         className={`${
           status == "unauthenticated"
@@ -381,7 +372,7 @@ const AdminControl = (newData, password) => {
             : "opacity-0 pointer-events-none"
         } duration-500 absolute top-0 left-0 w-screen h-screen`}
       >
-        <Login />
+        <Login error={error} setError={setError} />
       </div>
     </>
   );

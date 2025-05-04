@@ -129,3 +129,12 @@
 .Toastify__toast {
   font-family: IBM Plex Sans Thai, sans-serif !important;
 }
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

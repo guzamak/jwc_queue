@@ -6,7 +6,7 @@ import { Slide, ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
 
-export default function Login() {
+export default function Login({error,setError}) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
@@ -20,7 +20,7 @@ export default function Login() {
       })
 
       if (result.error) {
-        const id = toast.error(result.error)
+        setError(result.error)
       } 
     } catch (error) {
       console.log('error', error)
@@ -29,7 +29,7 @@ export default function Login() {
 
   return (
     <div className="flex h-screen items-center justify-center font-IBM-Plex">
-       <ToastContainer
+       {/* <ToastContainer
                 position="top-center"
                 autoClose={5000}
                 hideProgressBar={false}
@@ -41,7 +41,7 @@ export default function Login() {
                 pauseOnHover
                 theme="light"
                 transition={Slide}
-              />
+              /> */}
       <form
         onSubmit={handleSubmit}
         className="bg-white p-6 rounded-md shadow-md"

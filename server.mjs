@@ -101,16 +101,63 @@ app.prepare().then(() => {
       }
 
     });
-    socket.on("admin", async({ id,newData,password }) => {
+    // socket.on("admin", async({ id,newData,password }) => {
 
-      const { currentUser } = await serverAuth(id);
-      if( password == 12345){
-        data = newData
+    //   const { currentUser } = await serverAuth(id);
+    //   if( password == 12345){
+    //     data = newData
+    //     io.emit("dataResponse", data);
+    //   }else{
+    //     socket.emit("error","คุณไม่ใช่ admin")
+    //   }
+
+    // });
+    socket.on("admin", async ({ id, text, password }) => {
+      try {
+        const { currentUser } = await serverAuth(id);
+        const role = currentUser.username.split("-")[0]
+
+        if (role == "Admin") {
+          return socket.emit("error", "คุณไม่ใช่ admin");
+        }
+    
+        if (password !== "12345") {
+          return socket.emit("error", "รหัสผ่านไม่ถูกต้อง");
+        }
+    
+        let newData;
+        try {
+          newData = JSON.parse(text);
+        } catch (e) {
+          return socket.emit("error", "JSON ไม่ถูกต้อง");
+        }
+    
+        const isValidStructure = (data) => {
+          if (!Array.isArray(data)) return false;
+        
+          return data.every(inner =>
+            Array.isArray(inner) &&
+            inner.every(obj =>
+              typeof obj === "object" &&
+              obj !== null &&
+              !Array.isArray(obj) &&
+              Object.keys(obj).length === 2 &&
+              typeof obj.name === "string" &&
+              typeof obj.inroom === "boolean"
+            )
+          );
+        };
+    
+        if (!isValidStructure(newData)) {
+          return socket.emit("error", "โครงสร้างข้อมูลไม่ถูกต้อง");
+        }
+    
+        data = newData;
         io.emit("dataResponse", data);
-      }else{
-        socket.emit("error","คุณไม่ใช่ admin")
+        
+      } catch (err) {
+        socket.emit("error", "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์");
       }
-
     });
   });
   io.on("disconnect", (socket) => {
