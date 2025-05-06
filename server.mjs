@@ -43,13 +43,17 @@ app.prepare().then(() => {
       const { currentUser } = await serverAuth(id)
       const role = currentUser.role
 
-      if (!data.some(arr => arr.some((user => user.name === currentUser.username))) && role != "Consult" && role != "Admin") {
-        // data[index].push(currentUser.username);
-        data[index].push({name:currentUser.username,inroom:false});
-      }else{
-        socket.emit("error","คุณจองในคิวอื่นอยู่")
+      if (
+        !Object.values(data).some(arr =>
+          arr.some(user => user.name === currentUser.username)
+        ) &&
+        role !== "Consult" &&
+        role !== "Admin"
+      ) {
+        data[index].push({ name: currentUser.username, inroom: false });
+      } else {
+        socket.emit("error", "คุณจองในคิวอื่นอยู่");
       }
-
       io.emit("dataResponse", data);
     });
 
