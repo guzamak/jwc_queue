@@ -13,8 +13,7 @@ const port = 3000;
 const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
 // [[{name: , inroom : }]]
-let data = [[],[],[]]
-
+let data = {0:[],1:[],2:[],3:[]}
 
 export const serverAuth = async (id) => {
   try {
@@ -42,9 +41,9 @@ app.prepare().then(() => {
 
     socket.on("addQueue", async({ id,index }) => {
       const { currentUser } = await serverAuth(id)
-      const role = currentUser.username.split("-")[0]
+      const role = currentUser.role
 
-      if (!data.some(arr => arr.some((user => user.name === currentUser.username))) && role !== "CONSULT") {
+      if (!data.some(arr => arr.some((user => user.name === currentUser.username))) && role != "Consult" && role != "Admin") {
         // data[index].push(currentUser.username);
         data[index].push({name:currentUser.username,inroom:false});
       }else{
@@ -56,35 +55,35 @@ app.prepare().then(() => {
 
     socket.on("clearQueue", async({ id }) => {
       const { currentUser } = await  serverAuth(id)
-      const role = currentUser.username.split("-")[0]
+      const role = currentUser.role
       // console.log("", index, role)
       
-      if (role == "CONSULT") {
-        const index = currentUser.username.split("-")[1][1]-1
+      if (role == "Consult") {
+        const index = currentUser.consultIndex
         if (data[index].length > 0) {
           data[index].shift()
         }else{
           socket.emit("error","ยังไม่มีคิว")
         }
       }else{
-        socket.emit("error","คุณไม่ใช่ CONSULT")
+        socket.emit("error","คุณไม่ใช่ Consult")
       }
       io.emit("dataResponse", data);
     })
 
     socket.on("InRoomQueue", async({ id }) => {
       const { currentUser } = await  serverAuth(id)
-      const role = currentUser.username.split("-")[0]
+      const role = currentUser.role
       
-      if (role == "CONSULT") {
-        const index = currentUser.username.split("-")[1][1]-1
+      if (role == "Consult") {
+        const index = currentUser.consultIndex
         if (data[index].length > 0) {
           data[index][0].inroom = !data[index][0].inroom
         }else{
           socket.emit("error","ยังไม่มีคิว")
         }
       }else{
-        socket.emit("error","คุณไม่ใช่ CONSULT")
+        socket.emit("error","คุณไม่ใช่ Consult")
       }
       io.emit("dataResponse", data);
     })
@@ -101,27 +100,18 @@ app.prepare().then(() => {
       }
 
     });
-    // socket.on("admin", async({ id,newData,password }) => {
 
-    //   const { currentUser } = await serverAuth(id);
-    //   if( password == 12345){
-    //     data = newData
-    //     io.emit("dataResponse", data);
-    //   }else{
-    //     socket.emit("error","คุณไม่ใช่ admin")
-    //   }
-
-    // });
     socket.on("admin", async ({ id, text, password }) => {
       try {
         const { currentUser } = await serverAuth(id);
-        const role = currentUser.username.split("-")[0]
+        const role = currentUser.role
+        // console.log(role== "Admin")
 
-        if (role == "Admin") {
+        if (role !== "Admin") {
           return socket.emit("error", "คุณไม่ใช่ admin");
         }
     
-        if (password !== "12345") {
+        if (password !== process.env.adminPassword) {
           return socket.emit("error", "รหัสผ่านไม่ถูกต้อง");
         }
     
@@ -148,9 +138,9 @@ app.prepare().then(() => {
           );
         };
     
-        if (!isValidStructure(newData)) {
-          return socket.emit("error", "โครงสร้างข้อมูลไม่ถูกต้อง");
-        }
+        // if (!isValidStructure(newData)) {
+        //   return socket.emit("error", "โครงสร้างข้อมูลไม่ถูกต้อง");
+        // }
     
         data = newData;
         io.emit("dataResponse", data);

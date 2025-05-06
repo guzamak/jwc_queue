@@ -22,14 +22,14 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const [isConnected, setIsConnected] = useState(false);
   const [transport, setTransport] = useState("N/A");
-  const [data, setData] = useState([], [], []);
+  const [data, setData] = useState([], [], [],[]);
   const [isConsult, setIsConsult] = useState(false);
   const [consultIndex, setConsultIndex] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [text, setText] = useState(""); // แสดงข้อมูลในรูปแบบ JSON
   const [password, setPassword] = useState("");
   const [error,setError] = useState();
-
+  const [consultList,setConsultList] = useState([]);
 
   useEffect(() => {
     if (socket.connected) {
@@ -60,14 +60,29 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    const fetchConsults = async () => {
+      try {
+        const res = await fetch('/api/getConsult')
+        const data = await res.json()
+        setConsultList(data.consults)
+        console.log(data.consults)
+      } catch (err) {
+        console.error('Failed to fetch consults', err)
+      }
+    }
+
+    fetchConsults()
+  }, [])
+
+  useEffect(() => {
     if (status != "authenticated") return;
     if (!isConnected) return;
     const id = session.user.id;
-    const role = session.user.username.split("-")[0];
+    const role = session.user.role;
 
-    if (role == "CONSULT") {
+    if (role == "Consult") {
       setIsConsult(true);
-      const index = session.user.username.split("-")[1][1] - 1;
+      const index = session.user.consultIndex;
       setConsultIndex(index);
     }
 
@@ -185,7 +200,7 @@ console.log(data)
         </main>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 container p-6">
-          {data.map((item, index) => {
+          {Object.entries(data).map(([index, item]) => {
             return (
               <div
                 className="bg-white rounded-lg shadow-sm  duration-200"
@@ -193,14 +208,14 @@ console.log(data)
               >
                 <div className="p-4 border-b-[1px] border-gray-200">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-medium">
-                      CONSULT - 0{index + 1}
+                    <h2 className="text-lg font-medium">
+                      {consultList[index]?.username}
                     </h2>
                   </div>
                 </div>
                 <div className="divide-y divide-neutral-200">
                   <div className="p-4">
-                    {item.map((tag, j) => (
+                    {item?.map((tag, j) => (
                       <div
                         className={`flex items-center gap-2 mb-4 ${
                           j != 0 ? "opacity-20" : ""
@@ -226,7 +241,7 @@ console.log(data)
                     <div className="flex items-center gap-3">
                       <i className="fa-solid fa-door-open text-2xl text-neutral-700"></i>
                       <div>
-                        <h3>Room {["S7", "S8", "S9"][index]}</h3>
+                        <h3>Room {consultList[index]?.room}</h3>
                         <p className="text-sm text-neutral-500">
                           {item[0]?.inroom ? "มีคนกำลังปรึกษา" : "ว่างเเล้ว"}
                         </p>

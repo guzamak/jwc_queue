@@ -25,6 +25,8 @@ export const authOptions = {
           return {
             id: user.id,
             username: user.username,
+            role: user.role,
+            consultIndex: user.consultIndex,
           }
         } else {
           throw new Error('Invalid email or password')
@@ -40,7 +42,12 @@ export const authOptions = {
     jwt: async ({ token, user }) => {
       if (user) {
         token.id = user.id
-        token.username = user.username; 
+        token.username = user.username;
+        console.log(user)
+        token.role = user.role
+        if (user.role == "Consult"){
+          token.consultIndex = user.consultIndex
+        }
       }
       return token
     },
@@ -48,6 +55,8 @@ export const authOptions = {
       if (session.user) {
         session.user.id = token.id
         session.user.username = token.username; 
+        session.user.role = token.role
+        session.user.consultIndex = token.consultIndex
       }
       return session
     },
